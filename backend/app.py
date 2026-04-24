@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 from dotenv import load_dotenv
+from flask import Flask, jsonify, request
 
 from services.generation.chat_model import generate_response, get_chat_model
 from services.generation.prompt_template import construct_rag_prompt
@@ -17,6 +18,13 @@ from services.ingestion.vector_store import InMemoryVectorStore
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Global state for RAG pipeline
+_vector_store: InMemoryVectorStore | None = None
+_embeddings_model = None
 
 
 def cosine_similarity(embedding1: list[float], embedding2: list[float]) -> float:
@@ -79,47 +87,79 @@ def generate_lesson_plan(
     k: int = 3,
     system_instruction: str | None = None,
 ) -> str:
-    """Generate a lesson plan using the RAG pipeline.
-
-    Args:
-        user_query: The user's question about a concept.
-        vector_store: The populated vector store with context chunks.
-        embeddings_model: The Cohere embeddings model.
-        chat_model_name: Name of the Cohere chat model to use.
-        k: Number of relevant chunks to retrieve.
-        system_instruction: Optional custom system instruction.
-
-    Returns:
-        Generated lesson plan as a string.
-    """
-
+    """Generate a lesson plan using the RAG pipeline."""
     query_embedding = embed_query(embeddings_model, user_query)
-
     relevant_records = retrieve_top_k(vector_store, query_embedding, k=k)
-
     rag_prompt = construct_rag_prompt(user_query, relevant_records, system_instruction)
-
     chat_model = get_chat_model(model=chat_model_name)
     lesson_plan = generate_response(chat_model, rag_prompt)
-
-    print("\nGenerated Lesson Plan:")
-    print("-" * 60)
-    print(lesson_plan)
-    print("-" * 60)
-
     return lesson_plan
 
 
-if __name__ == "__main__":
-    # Run ingestion pipeline to build vector store
-    vector_store = run_ingestion_pipeline()
+def init_rag_pipeline():
+    """Initialize the RAG pipeline on app startup."""
+    global _vector_store, _embeddings_model
+    print("Initializing RAG pipeline...")
+    _vector_store = run_ingestion_pipeline()
+    _embeddings_model = get_cohere_embeddings()
+    print(f"RAG pipeline initialized with vector store: {_vector_store}")
 
-    # Example generation pipeline
-    embeddings_model = get_cohere_embeddings()
-    example_query = "Teach me about data structures and their applications"
-    lesson_plan = generate_lesson_plan(
-        user_query=example_query,
-        vector_store=vector_store,
-        embeddings_model=embeddings_model,
-        k=3,
-    )
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Health check endpoint."""
+    return jsonify({"status": "ok"})
+
+
+@app.route("/planner", methods=["POST"])
+def planner():
+    """Planner endpoint that generates lesson plans using RAG pipeline.
+    
+    Request JSON:
+        {
+            "query": "Teach me about data structures",
+            "k": 3,
+            "system_instruction": "Optional custom instruction"
+        }
+    
+    Response JSON:
+        {
+            "success": true,
+            "lesson_plan": "Generated lesson plan text",
+            "query": "Original user query"
+        }
+    """
+    if not _vector_store or not _embeddings_model:
+        return jsonify({"success": False, "error": "RAG pipeline not initialized"}), 500
+    
+    data = request.get_json()
+    if not data or "query" not in data:
+        return jsonify({"success": False, "error": "Missing 'query' field in request"}), 400
+    
+    user_query = data.get("query")
+    k = data.get("k", 3)
+    system_instruction = data.get("system_instruction")
+    
+    try:
+        lesson_plan = generate_lesson_plan(
+            user_query=user_query,
+            vector_store=_vector_store,
+            embeddings_model=_embeddings_model,
+            k=k,
+            system_instruction=system_instruction,
+        )
+        return jsonify({
+            "success": True,
+            "query": user_query,
+            "lesson_plan": lesson_plan,
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 500
+
+
+if __name__ == "__main__":
+    init_rag_pipeline()
+    app.run(debug=True, host="0.0.0.0", port=5000)
