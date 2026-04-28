@@ -18,6 +18,9 @@ Ask for lesson plan for some concept and receive a lesson plan from the llm.
 - Using Flask for api endpoint "Planner"
 - Using Flask over FastAPI as deployment platform only works with wsgi whereas FastAPI is asgi
 
+# Frontend
+- Use Next.js to build a simple frontend for the backend API
+
 # Why?
 - Efficiently sets up a plan for the user. The llm will provide a more taliored lesson plan to the user based on their prior knowledge.
 - The goal of this is to save time for the user so that they don't need to keep supplying the llm with more context.
