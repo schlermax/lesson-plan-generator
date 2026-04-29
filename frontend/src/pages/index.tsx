@@ -25,7 +25,9 @@ export default function Home() {
     setResponse(null);
 
     try {
-      const res = await fetch('http://localhost:5000/planner', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+      const res = await fetch(`${API_URL}/planner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,8 +173,10 @@ export default function Home() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">
                     Lesson Plan
                   </h3>
-                  <div className="prose prose-indigo max-w-none prose-headings:text-gray-900 prose-h2:mt-6 prose-h3:mt-4 prose-p:text-gray-700 prose-strong:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5">
-                    <ReactMarkdown>{response.lesson_plan}</ReactMarkdown>
+                  <div className="prose prose-indigo max-w-none">
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {response.lesson_plan}
+                    </div>
                   </div>
                 </div>
 

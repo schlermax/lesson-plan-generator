@@ -1,0 +1,2 @@
+This nested file explains algorithm design strategies and step-by-step planning.
+It is included to verify recursive directory loading through the LangChain DirectoryLoader.

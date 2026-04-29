@@ -1,0 +1,2 @@
+This file provides the basic context for a lesson plan generator.
+It contains an overview of foundational concepts and the learner's prerequisites.

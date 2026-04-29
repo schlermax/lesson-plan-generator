@@ -1,0 +1,2 @@
+The learner already understands Python syntax, functions, and basic data structures.
+The lesson plan should build on this prior knowledge and introduce more advanced ideas clearly.
