@@ -163,7 +163,7 @@ def planner():
             "error": str(e),
         }), 500
 
+init_rag_pipeline()
 
 if __name__ == "__main__":
-    init_rag_pipeline()
     app.run(debug=True, host="0.0.0.0", port=6573)
