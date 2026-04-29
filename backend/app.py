@@ -18,7 +18,8 @@ from services.ingestion.text_splitter import split_documents
 from services.ingestion.vector_store import InMemoryVectorStore
 
 # Load environment variables from .env file
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 # Initialize Flask app
 app = Flask(__name__)
